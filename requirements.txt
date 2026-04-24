@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+xgboost
+lightgbm
+pandas
+numpy
+scikit-learn
+mlflow
+dvc
+confluent-kafka
+prometheus-client
+evidently
+pytest
+python-dotenv
