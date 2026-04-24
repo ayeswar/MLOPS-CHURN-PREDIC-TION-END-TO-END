@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: churn-predictor-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    branch: main
+    plan: free
+    envVars:
+      - key: MLFLOW_TRACKING_URI
+        value: sqlite:///mlflow.db
+      - key: PORT
+        value: 8000
+    healthCheckPath: /health
