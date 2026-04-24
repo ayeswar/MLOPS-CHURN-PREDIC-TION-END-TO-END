@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChurnAI — Customer Churn Prediction Dashboard</title>
+  <meta name="description" content="Real-time Customer Churn Prediction powered by XGBoost & MLOps Pipeline"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <!-- Background Orbs -->
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">⚡</div>
+      <span class="brand-name">Churn<span class="brand-accent">AI</span></span>
+    </div>
+    <div class="nav-links">
+      <a href="#predict" class="nav-link active">Predict</a>
+      <a href="#stats" class="nav-link">Analytics</a>
+      <a href="#about" class="nav-link">About</a>
+    </div>
+    <div class="nav-status">
+      <span class="status-dot" id="apiStatus"></span>
+      <span id="apiStatusText">Checking API...</span>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-badge">🔮 Powered by XGBoost + MLflow</div>
+    <h1 class="hero-title">Predict Customer<br/><span class="gradient-text">Churn in Real-Time</span></h1>
+    <p class="hero-subtitle">Enter customer details below and get an instant AI-powered churn risk assessment with confidence scores.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="stat-num">10K+</span><span class="stat-label">Records Trained</span></div>
+      <div class="hero-stat"><span class="stat-num">~87%</span><span class="stat-label">Accuracy</span></div>
+      <div class="hero-stat"><span class="stat-num">&lt;50ms</span><span class="stat-label">Prediction Time</span></div>
+    </div>
+  </section>
+
+  <!-- Predict Section -->
+  <section class="predict-section" id="predict">
+    <div class="container">
+      <div class="predict-grid">
+
+        <!-- Input Form -->
+        <div class="card form-card">
+          <div class="card-header">
+            <div class="card-icon">👤</div>
+            <div>
+              <h2 class="card-title">Customer Profile</h2>
+              <p class="card-subtitle">Fill in the customer details</p>
+            </div>
+          </div>
+
+          <form id="predictForm">
+            <div class="form-grid">
+
+              <div class="form-group">
+                <label for="age">Age</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">🎂</span>
+                  <input type="number" id="age" name="age" min="18" max="100" placeholder="e.g. 35" required/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="tenure">Tenure (months)</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">📅</span>
+                  <input type="number" id="tenure" name="tenure" min="0" max="120" placeholder="e.g. 12" required/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="balance">Account Balance ($)</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">💰</span>
+                  <input type="number" id="balance" name="balance" step="0.01" placeholder="e.g. 75000.00" required/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="num_products">Number of Products</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">📦</span>
+                  <input type="number" id="num_products" name="num_products" min="1" max="4" placeholder="1-4" required/>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="estimated_salary">Estimated Salary ($)</label>
+                <div class="input-wrapper">
+                  <span class="input-icon">💼</span>
+                  <input type="number" id="estimated_salary" name="estimated_salary" step="0.01" placeholder="e.g. 60000.00" required/>
+                </div>
+              </div>
+
+              <div class="form-group toggle-group">
+                <label>Has Credit Card?</label>
+                <div class="toggle-row">
+                  <label class="toggle">
+                    <input type="checkbox" id="has_cr_card" name="has_cr_card"/>
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label" id="crCardLabel">No</span>
+                </div>
+              </div>
+
+              <div class="form-group toggle-group">
+                <label>Active Member?</label>
+                <div class="toggle-row">
+                  <label class="toggle">
+                    <input type="checkbox" id="is_active_member" name="is_active_member"/>
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="toggle-label" id="activeMemberLabel">No</span>
+                </div>
+              </div>
+
+            </div>
+
+            <button type="submit" class="predict-btn" id="predictBtn">
+              <span class="btn-icon">🔮</span>
+              <span class="btn-text">Predict Churn Risk</span>
+              <div class="btn-loader" id="btnLoader"></div>
+            </button>
+          </form>
+
+          <!-- Quick Fill -->
+          <div class="quick-fill">
+            <span>Quick fill:</span>
+            <button class="quick-btn" onclick="fillSample('high')">⚠️ High Risk</button>
+            <button class="quick-btn" onclick="fillSample('low')">✅ Low Risk</button>
+          </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="result-panel">
+
+          <!-- Result Card -->
+          <div class="card result-card" id="resultCard">
+            <div class="result-placeholder" id="resultPlaceholder">
+              <div class="placeholder-icon">🎯</div>
+              <p>Submit the form to see<br/>your prediction result</p>
+            </div>
+
+            <div class="result-content" id="resultContent" style="display:none;">
+              <div class="result-header">
+                <div class="result-icon" id="resultIcon"></div>
+                <div class="result-label" id="resultLabel"></div>
+              </div>
+              <div class="result-score-ring">
+                <svg viewBox="0 0 120 120" class="ring-svg">
+                  <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                  <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"/>
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-percent" id="ringPercent">0%</span>
+                  <span class="ring-text">Churn Risk</span>
+                </div>
+              </div>
+              <div class="result-badges">
+                <div class="result-badge" id="badge1"></div>
+                <div class="result-badge" id="badge2"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metrics Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon">📊</div>
+              <div class="metric-info">
+                <span class="metric-value" id="totalPreds">0</span>
+                <span class="metric-label">Total Predictions</span>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">⚠️</div>
+              <div class="metric-info">
+                <span class="metric-value" id="churnCount">0</span>
+                <span class="metric-label">High Risk Found</span>
+              </div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-icon">✅</div>
+              <div class="metric-info">
+                <span class="metric-value" id="safeCount">0</span>
+                <span class="metric-label">Low Risk Found</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="card history-card">
+            <h3 class="history-title">📋 Prediction History</h3>
+            <div id="historyList" class="history-list">
+              <p class="no-history">No predictions yet...</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section" id="stats">
+    <div class="container">
+      <h2 class="section-title">📈 Pipeline <span class="gradient-text">Analytics</span></h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon">🔄</div>
+          <h3>Real-Time Streaming</h3>
+          <p>Apache Kafka streams live customer events from producer to consumer with millisecond latency.</p>
+          <div class="stat-tag">Kafka + Zookeeper</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon">🧠</div>
+          <h3>XGBoost Model</h3>
+          <p>Gradient boosted decision trees trained on 10,000+ customer records with feature engineering.</p>
+          <div class="stat-tag">XGBoost + Scikit-learn</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon">📦</div>
+          <h3>MLflow Tracking</h3>
+          <p>Every experiment, metric, parameter, and model artifact is versioned and tracked automatically.</p>
+          <div class="stat-tag">MLflow Registry</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon">📊</div>
+          <h3>Drift Detection</h3>
+          <p>Evidently AI monitors data distribution shifts and triggers automated retraining via DVC.</p>
+          <div class="stat-tag">Evidently AI + DVC</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section class="about-section" id="about">
+    <div class="container">
+      <div class="about-card">
+        <div class="about-left">
+          <div class="about-avatar">👨‍💻</div>
+          <h2>Papannagari Ayeswararao</h2>
+          <p class="about-role">MLOps Engineer & Data Scientist</p>
+          <div class="about-links">
+            <a href="https://github.com/ayeswar/MLOPS-CHURN-PREDIC-TION-END-TO-END" target="_blank" class="about-link github">
+              <span>⭐</span> GitHub Repo
+            </a>
+          </div>
+        </div>
+        <div class="about-right">
+          <h3>About This Project</h3>
+          <p>A production-grade, end-to-end MLOps pipeline for Customer Churn Prediction using a fully open-source, local stack. Built to demonstrate real-world ML engineering skills with Kafka streaming, MLflow tracking, FastAPI serving, Prometheus monitoring, and Kubernetes orchestration.</p>
+          <div class="tech-stack">
+            <span class="tech-chip">🐍 Python 3.11</span>
+            <span class="tech-chip">⚡ FastAPI</span>
+            <span class="tech-chip">🚀 XGBoost</span>
+            <span class="tech-chip">📦 MLflow</span>
+            <span class="tech-chip">🔄 Kafka</span>
+            <span class="tech-chip">🐳 Docker</span>
+            <span class="tech-chip">☸️ Kubernetes</span>
+            <span class="tech-chip">📊 Evidently</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Built with ❤️ by <strong>Ayeswararao</strong> · MLOps Churn Prediction System</p>
+    <p class="footer-sub">⭐ <a href="https://github.com/ayeswar/MLOPS-CHURN-PREDIC-TION-END-TO-END" target="_blank">Star on GitHub</a></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
